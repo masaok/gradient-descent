@@ -178,6 +178,24 @@ class LinearRegressionGradientDescent(object):
         epsilon : threshold for stopping condition
         """
 
+        # Initialize weights
+        self.__weights = np.zeros([1, x.shape[1] + 1])
+        self.__weights[0] = -1.0
+
+        prev_w = self.__weights
+        prev_loss = np.inf  # positive infinity
+
+        for i in range(t):
+            # predict
+            predictions = self.predict(x)
+
+            # compute the loss
+            loss = np.mean((h_x_y) ** 2)
+
+            # compute the gradients
+
+            # check stopping conditions
+
     def predict(self, x):
         """
         Predicts the label for each feature vector x
@@ -187,7 +205,17 @@ class LinearRegressionGradientDescent(object):
         returns : N x 1 label vector
         """
 
-        return np.zeros(x.shape[0])
+        # what should weights be equal to?
+
+        x = np.concatenate([0.5 * np.ones([x.shape[0], 1]), x], axis=-1)
+
+        h_x = np.zeros(x.shape[0])
+
+        for n in range(x.shape[0]):
+            x_n = x[n, ...]
+            h_x[n] = np.dot(self.__weights.T, x_n)
+
+        return h_x
 
     def score(self, x, y):
         """
@@ -200,7 +228,14 @@ class LinearRegressionGradientDescent(object):
         returns : double
         """
 
-        return 0.0
+        # Weight [1 x d+1]
+        # MSE = 1/N
+
+        # Take the exam
+        h_x = self.predict(x)  # (N x 1)
+
+        # Grade the exam
+        return np.mean(y - h_x) ** 2
 
 
 def mean_squared_error(y_hat, y):
@@ -368,6 +403,8 @@ if __name__ == '__main__':
     our_scores_housing_test = mean_squared_error(our_predictions_housing_test, y_housing_test)
     print('Testing set mean accuracy: {:.4f}'.format(our_scores_housing_test))
 
+    predictions = our_linear_housing.predict(x_housing_test)
+
     # Trains our Linear Regression model on diabetes data
     t_diabetes = 0.0
     alpha_diabetes = 0.0
@@ -384,3 +421,5 @@ if __name__ == '__main__':
     our_predictions_diabetes_test = our_linear_diabetes.predict(x_diabetes_test)
     our_scores_diabetes_test = mean_squared_error(our_predictions_diabetes_test, y_diabetes_test)
     print('Testing set mean accuracy: {:.4f}'.format(our_scores_diabetes_test))
+
+    predictions = our_linear_diabetes.predict(x_diabetes_train)
