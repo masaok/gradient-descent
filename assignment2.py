@@ -1,10 +1,38 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3 -u
 
 import numpy as np
 import sklearn.datasets as skdata
 from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import LinearRegression
 
+
+import argparse
+import logging
+
+# Parse command line options
+parser = argparse.ArgumentParser(description='Do stuff.')
+parser.add_argument(
+    '-d', '--debug', dest='debug', action='store_true', default=0, help='debug mode')
+parser.add_argument(
+    '-i', '--info', dest='info', action='store_true', default=0, help='info mode')
+parser.add_argument(
+    '-w', '--warn', dest='warn', action='store_true', default=0, help='warn mode')
+
+args = parser.parse_args()
+
+# Initialize logging
+# logging.basicConfig(format='%(asctime)s %(levelname)s [%(filename)s:%(lineno)d] %(message)s',
+logging.basicConfig(format='%(levelname)s [%(filename)s:%(lineno)4d %(funcName)s] %(message)s',
+                    datefmt='%Y-%m-%d:%H:%M:%S',
+                    level=logging.INFO)
+
+log = logging.getLogger(__name__)
+if args.debug:
+    log.setLevel(logging.DEBUG)
+elif args.info:
+    log.setLevel(logging.INFO)
+elif args.warn:
+    log.setLevel(logging.WARNING)
 
 """
 Name: Doe, John (Please write names in <Last Name, First Name> format)
@@ -52,7 +80,7 @@ class GradientDescentOptimizer(object):
     def __init__(self):
         pass
 
-    def __compute_gradients(self, x, y, loss_func):
+    def __compute_gradients(self, w, x, y, loss_func):
         """
         Returns the gradient of the logistic, mean squared or half mean squared loss
 
@@ -62,8 +90,29 @@ class GradientDescentOptimizer(object):
 
         returns 1 x d gradients
         """
+
+        # Prepend the set of x attributes with 0.5 bias (in Perceptron, this is threshold)
+        bias = 0.5 * np.ones([x.shape[0], 1])
+
+        # Concatenate the bias above
+        x = np.concatenate([bias, x], axis=-1)  # x is now [N, d + 1
+
         if loss_func == 'logistic':
-            return 0.0
+
+            gradients = np.zeros(x.shape)
+            for n in range(x.shape[0]):
+                x_n = x[n, ...]
+
+                # log.info("x_n.shape: " + str(x_n.shape))
+                # log.info("w.shape: " + str(np.squeeze(w).shape))
+
+                h_x = np.dot(np.squeeze(w), x_n)
+                gradients[n, :] = (-y[n] * x_n) / (1.0 + np.exp(y[n] * h_x))
+
+                # there are N gradients
+
+            # return 0.0
+            return np.mean(gradients, axis=0)
         elif loss_func == 'mean_squared':
             return 0.0
         elif loss_func == 'half_mean_squared':
@@ -83,6 +132,11 @@ class GradientDescentOptimizer(object):
 
         returns 1 x d weights
         """
+
+        # Call compute_gradients somewhere here
+        # alpha * self.__compute_gradients()
+
+        w = w - alpha * self.__compute_gradients(w, x, y, loss_func)
 
         return w
 
@@ -111,6 +165,40 @@ class LogisticRegressionGradientDescent(object):
         epsilon : threshold for stopping condition
         """
 
+        # +1 is the threshold
+        self.__weights = np.zeros([1, x.shape[1]+1])
+        self.__weights[0] = -1
+
+        for i in range(int(t)):
+            # predict
+            h_x = self.predict(x)
+
+            # compute the loss
+            # loss = np.mean((h_x_y) ** 2)
+            loss = np.mean(np.log(1 + np.exp(-y * h_x)))  # (N, 1) and (N, 1)
+            print("i=" + str(i) + " loss=" + str(loss))
+
+            # call update (which calls compute the gradients)
+            w_i = self.__optimizer.update(self.__weights, x, y, alpha, 'logistic')
+
+            if loss == 0:
+                break
+
+            # d_w is the change in weights
+            d_w = self.__weights - w_i
+            # log.info("d_w: " + str(d_w))
+
+            # magnitude of the change in weights
+            mag = np.sqrt(np.sum(d_w ** 2))
+            # log.info("mag: " + str(mag))
+            # log.info("eps: " + str(epsilon))
+
+            self.__weights = w_i
+
+            # check stopping conditions
+            if mag < epsilon:
+                break
+
     def predict(self, x):
         """
         Predicts the label for each feature vector x
@@ -127,12 +215,13 @@ class LogisticRegressionGradientDescent(object):
         x = np.concatenate([bias, x], axis=-1)  # x is now [N, d + 1]
 
         # Prepare an array for predictions
-        predictions = np.zeroes(x.shape[0])
+        predictions = np.zeros(x.shape[0])
 
         # Iterate through every row in x
         for n in range(x.shape[0]):
             x_n = x[n, ...]
-            h_x = np.dot(self.__weights.T, x_n)
+
+            h_x = np.dot(np.squeeze(self.__weights.T), x_n)
             predictions[n] = 1 / (1 + np.exp(-1 * h_x))
 
         predictions = np.where(predictions >= 0.5, 1.0, -1.0)
@@ -151,8 +240,9 @@ class LogisticRegressionGradientDescent(object):
 
         returns : double
         """
+        h_x = self.predict(x)
 
-        return 0.0
+        return np.mean(np.where(h_x == y, 1.0, 0.01))
 
 
 """
@@ -185,16 +275,16 @@ class LinearRegressionGradientDescent(object):
         prev_w = self.__weights
         prev_loss = np.inf  # positive infinity
 
-        for i in range(t):
-            # predict
-            predictions = self.predict(x)
+        # for i in range(t):
+        #     # predict
+        #     predictions = self.predict(x)
 
-            # compute the loss
-            loss = np.mean((h_x_y) ** 2)
+        #     # compute the loss
+        #     # loss = np.mean((h_x_y) ** 2)
 
-            # compute the gradients
+        #     # compute the gradients
 
-            # check stopping conditions
+        #     # check stopping conditions
 
     def predict(self, x):
         """
@@ -209,11 +299,19 @@ class LinearRegressionGradientDescent(object):
 
         x = np.concatenate([0.5 * np.ones([x.shape[0], 1]), x], axis=-1)
 
+        log.info("x.shape: " + str(x.shape))
+
         h_x = np.zeros(x.shape[0])
+        log.info("h_x.shape: " + str(h_x.shape))
 
         for n in range(x.shape[0]):
             x_n = x[n, ...]
-            h_x[n] = np.dot(self.__weights.T, x_n)
+            x_n = np.expand_dims(x_n, axis=-1)
+            # h_x[n] = np.dot(self.__weights.T, x_n.T)
+
+            h_x[n] = np.dot(np.squeeze(self.__weights), x_n)
+
+        # log.info("h_x: " + str(h_x))
 
         return h_x
 
@@ -240,13 +338,13 @@ class LinearRegressionGradientDescent(object):
 
 def mean_squared_error(y_hat, y):
     """
-      Computes the mean squared error
+    Computes the mean squared error
 
-      y_hat : N x 1 predictions
-      y : N x 1 ground-truth label
+    y_hat : N x 1 predictions
+    y : N x 1 ground-truth label
 
-      returns : double
-      """
+    returns : double
+    """
     return np.mean((y_hat-y)**2)
 
 
@@ -354,10 +452,12 @@ if __name__ == '__main__':
   Trains and tests our Logistic Regression model trained with Gradient Descent
   """
     # Trains our Logistic Regression model on Wisconsin cancer data
-    t_cancer = 0.0
-    alpha_cancer = 0.0
-    epsilon_cancer = 0.0
+    t_cancer = 1000        # how long you want to run for
+    alpha_cancer = 1e-4    # how large of a step you take
+    epsilon_cancer = 1e-8  # expected magnitude of movement at the finish line
     our_logistic_cancer = LogisticRegressionGradientDescent()
+
+    log.info("LOGISTIC CANCER FIT ... ")
     our_logistic_cancer.fit(
         x_cancer_train, y_cancer_train, t_cancer, alpha_cancer, epsilon_cancer)
     print('Results on Wisconsin breast cancer dataset using our Logistic Regression model')
@@ -373,6 +473,8 @@ if __name__ == '__main__':
     alpha_digits79 = 0.0
     epsilon_digits79 = 0.0
     our_logistic_digits79 = LogisticRegressionGradientDescent()
+
+    log.info("LOGISTIC DIGITS FIT ... ")
     our_logistic_digits79.fit(
         x_digits79_train, y_digits79_train, t_digits79, alpha_digits79, epsilon_digits79)
     print('Results on digits 7 and 9 dataset using our Logistic Regression model')
@@ -391,6 +493,8 @@ if __name__ == '__main__':
     alpha_housing = 0.0
     epsilon_housing = 0.0
     our_linear_housing = LinearRegressionGradientDescent()
+
+    log.info("LINEAR HOUSING FIT ... ")
     our_linear_housing.fit(
         x_housing_train, y_housing_train, t_housing, alpha_housing, epsilon_housing)
     print('Results on Boston housing price dataset using our Linear Regression model')
@@ -403,13 +507,15 @@ if __name__ == '__main__':
     our_scores_housing_test = mean_squared_error(our_predictions_housing_test, y_housing_test)
     print('Testing set mean accuracy: {:.4f}'.format(our_scores_housing_test))
 
-    predictions = our_linear_housing.predict(x_housing_test)
+    # log.info("LINEAR HOUSING PREDICT ... ")
+    # predictions = our_linear_housing.predict(x_housing_test)
 
     # Trains our Linear Regression model on diabetes data
     t_diabetes = 0.0
     alpha_diabetes = 0.0
     epsilon_diabetes = 0.0
     our_linear_diabetes = LinearRegressionGradientDescent()
+    log.info("LINEAR DIABETES FIT ... ")
     our_linear_diabetes.fit(
         x_diabetes_train, y_diabetes_train, t_diabetes, alpha_diabetes, epsilon_diabetes)
     print('Results on diabetes dataset using our Linear Regression model')
@@ -422,4 +528,5 @@ if __name__ == '__main__':
     our_scores_diabetes_test = mean_squared_error(our_predictions_diabetes_test, y_diabetes_test)
     print('Testing set mean accuracy: {:.4f}'.format(our_scores_diabetes_test))
 
-    predictions = our_linear_diabetes.predict(x_diabetes_train)
+    # log.info("LINEAR DIABETES PREDICT ... ")
+    # predictions = our_linear_diabetes.predict(x_diabetes_train)
