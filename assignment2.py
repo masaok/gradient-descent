@@ -452,6 +452,8 @@ if __name__ == '__main__':
   Trains and tests our Logistic Regression model trained with Gradient Descent
   """
     # Trains our Logistic Regression model on Wisconsin cancer data
+    # These inputs need to be "tuned"
+    # Start by picking any one of theme
     t_cancer = 1000        # how long you want to run for
     alpha_cancer = 1e-4    # how large of a step you take
     epsilon_cancer = 1e-8  # expected magnitude of movement at the finish line
