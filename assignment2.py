@@ -170,33 +170,40 @@ class LogisticRegressionGradientDescent(object):
         self.__weights[0] = -1
 
         for i in range(int(t)):
+            log.info("LOGISTIC CANCER FIT LOOP i=" + str(i))
+
             # predict
             h_x = self.predict(x)
 
             # compute the loss
             # loss = np.mean((h_x_y) ** 2)
             loss = np.mean(np.log(1 + np.exp(-y * h_x)))  # (N, 1) and (N, 1)
-            # log.info("i=" + str(i) + " loss=" + str(loss))
 
             # call update (which calls compute the gradients)
             w_i = self.__optimizer.update(self.__weights, x, y, alpha, 'logistic')
+            log.info("w_i: " + str(w_i))
+            log.info("weights: " + str(self.__weights))
 
             if loss == 0:
                 break
 
             # d_w is the change in weights
             d_w = self.__weights - w_i
-            # log.info("d_w: " + str(d_w))
+            log.info("d_w: " + str(d_w))
 
             # magnitude of the change in weights
             mag = np.sqrt(np.sum(d_w ** 2))
-            # log.info("mag: " + str(mag))
             # log.info("eps: " + str(epsilon))
 
+            log.info("i=" + str(i) + " loss=" + str(loss) + " mag=" + str(mag))
+
+            # Save the new weights
             self.__weights = w_i
 
             # check stopping conditions
-            if mag < epsilon:
+            if mag < epsilon:  # epsilon is expected mag when done
+                log.info("mag: " + str(mag))
+                log.info("eps: " + str(epsilon))
                 break
 
     def predict(self, x):
@@ -390,73 +397,79 @@ if __name__ == '__main__':
     x_diabetes_train, y_diabetes_train = x_diabetes[:split_idx, :], y_diabetes[:split_idx]
     x_diabetes_test, y_diabetes_test = x_diabetes[split_idx:, :], y_diabetes[split_idx:]
 
+    # """ SCI KIT LEARN LOGISTIC
+    # Trains and tests Logistic Regression model from scikit-learn
+    # """
+    # # Trains scikit-learn Logistic Regression model on Wisconsin cancer data
+    # scikit_logistic_cancer = LogisticRegression(solver='liblinear')
+    # scikit_logistic_cancer.fit(x_cancer_train, y_cancer_train)
+    # print('Results on Wisconsin breast cancer dataset using scikit-learn Logistic Regression model')
+    # # Test model on training set
+    # scikit_scores_cancer_train = scikit_logistic_cancer.score(x_cancer_train, y_cancer_train)
+    # print('Training set mean accuracy: {:.4f}'.format(scikit_scores_cancer_train))
+    # # Test model on testing set
+    # scikit_scores_cancer_test = scikit_logistic_cancer.score(x_cancer_test, y_cancer_test)
+    # print('Testing set mean accuracy: {:.4f}'.format(scikit_scores_cancer_test))
+
+    # # Trains scikit-learn Logistic Regression model on digits 7 and 9 data
+    # scikit_logistic_digits79 = LogisticRegression(solver='liblinear')
+    # scikit_logistic_digits79.fit(x_digits79_train, y_digits79_train)
+    # print('Results on digits 7 and 9 dataset using scikit-learn Logistic Regression model')
+    # # Test model on training set
+    # scikit_scores_digits79_train = scikit_logistic_digits79.score(
+    #     x_digits79_train, y_digits79_train)
+    # print('Training set mean accuracy: {:.4f}'.format(scikit_scores_digits79_train))
+    # # Test model on testing set
+    # scikit_scores_digits79_test = scikit_logistic_digits79.score(x_digits79_test, y_digits79_test)
+    # print('Testing set mean accuracy: {:.4f}'.format(scikit_scores_digits79_test))
+
+    # """ SCI KIT LEARN LINEAR
+    # Trains and tests Linear Regression model from scikit-learn
+    # """
+    # # Trains scikit-learn Linear Regression model on Boston housing price data
+    # scikit_linear_housing = LinearRegression()
+    # scikit_linear_housing.fit(x_housing_train, y_housing_train)
+    # print('Results on Boston housing price dataset using scikit-learn Linear Regression model')
+    # # Test model on training set
+    # scikit_predictions_housing_train = scikit_linear_housing.predict(x_housing_train)
+    # scikit_scores_housing_train = mean_squared_error(
+    #     scikit_predictions_housing_train, y_housing_train)
+    # print('Training set mean accuracy: {:.4f}'.format(scikit_scores_housing_train))
+    # # Test model on testing set
+    # scikit_predictions_housing_test = scikit_linear_housing.predict(x_housing_test)
+    # scikit_scores_housing_test = mean_squared_error(scikit_predictions_housing_test, y_housing_test)
+    # print('Testing set mean accuracy: {:.4f}'.format(scikit_scores_housing_test))
+
+    # # Trains scikit-learn Linear Regression model on diabetes data
+    # scikit_linear_diabetes = LinearRegression()
+    # scikit_linear_diabetes.fit(x_diabetes_train, y_diabetes_train)
+    # print('Results on diabetes dataset using scikit-learn Linear Regression model')
+    # # Test model on training set
+    # scikit_predictions_diabetes_train = scikit_linear_diabetes.predict(x_diabetes_train)
+    # scikit_scores_diabetes_train = mean_squared_error(
+    #     scikit_predictions_diabetes_train, y_diabetes_train)
+    # print('Training set mean accuracy: {:.4f}'.format(scikit_scores_diabetes_train))
+    # # Test model on testing set
+    # scikit_predictions_diabetes_test = scikit_linear_diabetes.predict(x_diabetes_test)
+    # scikit_scores_diabetes_test = mean_squared_error(
+    #     scikit_predictions_diabetes_test, y_diabetes_test)
+    # print('Testing set mean accuracy: {:.4f}'.format(scikit_scores_diabetes_test))
+
+    """ CUSTOM LOGISTIC
+    Trains and tests our Logistic Regression model trained with Gradient Descent
     """
-  Trains and tests Logistic Regression model from scikit-learn
-  """
-    # Trains scikit-learn Logistic Regression model on Wisconsin cancer data
-    scikit_logistic_cancer = LogisticRegression(solver='liblinear')
-    scikit_logistic_cancer.fit(x_cancer_train, y_cancer_train)
-    print('Results on Wisconsin breast cancer dataset using scikit-learn Logistic Regression model')
-    # Test model on training set
-    scikit_scores_cancer_train = scikit_logistic_cancer.score(x_cancer_train, y_cancer_train)
-    print('Training set mean accuracy: {:.4f}'.format(scikit_scores_cancer_train))
-    # Test model on testing set
-    scikit_scores_cancer_test = scikit_logistic_cancer.score(x_cancer_test, y_cancer_test)
-    print('Testing set mean accuracy: {:.4f}'.format(scikit_scores_cancer_test))
-
-    # Trains scikit-learn Logistic Regression model on digits 7 and 9 data
-    scikit_logistic_digits79 = LogisticRegression(solver='liblinear')
-    scikit_logistic_digits79.fit(x_digits79_train, y_digits79_train)
-    print('Results on digits 7 and 9 dataset using scikit-learn Logistic Regression model')
-    # Test model on training set
-    scikit_scores_digits79_train = scikit_logistic_digits79.score(
-        x_digits79_train, y_digits79_train)
-    print('Training set mean accuracy: {:.4f}'.format(scikit_scores_digits79_train))
-    # Test model on testing set
-    scikit_scores_digits79_test = scikit_logistic_digits79.score(x_digits79_test, y_digits79_test)
-    print('Testing set mean accuracy: {:.4f}'.format(scikit_scores_digits79_test))
-
-    """
-  Trains and tests Linear Regression model from scikit-learn
-  """
-    # Trains scikit-learn Linear Regression model on Boston housing price data
-    scikit_linear_housing = LinearRegression()
-    scikit_linear_housing.fit(x_housing_train, y_housing_train)
-    print('Results on Boston housing price dataset using scikit-learn Linear Regression model')
-    # Test model on training set
-    scikit_predictions_housing_train = scikit_linear_housing.predict(x_housing_train)
-    scikit_scores_housing_train = mean_squared_error(
-        scikit_predictions_housing_train, y_housing_train)
-    print('Training set mean accuracy: {:.4f}'.format(scikit_scores_housing_train))
-    # Test model on testing set
-    scikit_predictions_housing_test = scikit_linear_housing.predict(x_housing_test)
-    scikit_scores_housing_test = mean_squared_error(scikit_predictions_housing_test, y_housing_test)
-    print('Testing set mean accuracy: {:.4f}'.format(scikit_scores_housing_test))
-
-    # Trains scikit-learn Linear Regression model on diabetes data
-    scikit_linear_diabetes = LinearRegression()
-    scikit_linear_diabetes.fit(x_diabetes_train, y_diabetes_train)
-    print('Results on diabetes dataset using scikit-learn Linear Regression model')
-    # Test model on training set
-    scikit_predictions_diabetes_train = scikit_linear_diabetes.predict(x_diabetes_train)
-    scikit_scores_diabetes_train = mean_squared_error(
-        scikit_predictions_diabetes_train, y_diabetes_train)
-    print('Training set mean accuracy: {:.4f}'.format(scikit_scores_diabetes_train))
-    # Test model on testing set
-    scikit_predictions_diabetes_test = scikit_linear_diabetes.predict(x_diabetes_test)
-    scikit_scores_diabetes_test = mean_squared_error(
-        scikit_predictions_diabetes_test, y_diabetes_test)
-    print('Testing set mean accuracy: {:.4f}'.format(scikit_scores_diabetes_test))
-
-    """
-  Trains and tests our Logistic Regression model trained with Gradient Descent
-  """
     # Trains our Logistic Regression model on Wisconsin cancer data
     # These inputs need to be "tuned"
     # Start by picking any one of theme
-    t_cancer = 1000        # how long you want to run for
+
+    # current best: train: 0.6152
+    # current best:  test: 0.7047
+
+    # Increased alpha to 0.04: 0.6171, 0.7568
+
+    t_cancer = 1000       # how long you want to run for
     alpha_cancer = 0.004   # how large of a step you take (started at 1e-4)
-    epsilon_cancer = 1e-2  # expected magnitude of movement at the finish line (1e-8)
+    epsilon_cancer = 1e-1  # expected magnitude of movement at the finish line (1e-8)
     our_logistic_cancer = LogisticRegressionGradientDescent()
 
     log.info("LOGISTIC CANCER FIT ... ")
@@ -471,21 +484,25 @@ if __name__ == '__main__':
     print('Testing set mean accuracy: {:.4f}'.format(our_scores_cancer_test))
 
     # Trains our Logistic Regression model on digits 7 and 9 data
-#     t_digits79 = 0.0
-#     alpha_digits79 = 0.0
-#     epsilon_digits79 = 0.0
-#     our_logistic_digits79 = LogisticRegressionGradientDescent()
+    # t_digits79 = 100
+    # alpha_digits79 = 1e-4
+    # epsilon_digits79 = 1e-8
+    # our_logistic_digits79 = LogisticRegressionGradientDescent()
 
-#     log.info("LOGISTIC DIGITS FIT ... ")
-#     our_logistic_digits79.fit(
-#         x_digits79_train, y_digits79_train, t_digits79, alpha_digits79, epsilon_digits79)
-#     print('Results on digits 7 and 9 dataset using our Logistic Regression model')
-#     # Test model on training set
-#     our_scores_digits79_train = our_logistic_digits79.score(x_digits79_train, y_digits79_train)
-#     print('Training set mean accuracy: {:.4f}'.format(our_scores_digits79_train))
-#     # Test model on testing set
-#     our_scores_digits79_test = our_logistic_digits79.score(x_digits79_test, y_digits79_test)
-#     print('Testing set mean accuracy: {:.4f}'.format(our_scores_digits79_test))
+    # log.info("LOGISTIC DIGITS FIT ... ")
+    # log.info("t_digits79: " + str(t_digits79))
+    # log.info("alpha_digits79: " + str(alpha_digits79))
+    # log.info("epsilon_digits79: " + str(epsilon_digits79))
+
+    # our_logistic_digits79.fit(
+    #     x_digits79_train, y_digits79_train, t_digits79, alpha_digits79, epsilon_digits79)
+    # print('Results on digits 7 and 9 dataset using our Logistic Regression model')
+    # # Test model on training set
+    # our_scores_digits79_train = our_logistic_digits79.score(x_digits79_train, y_digits79_train)
+    # print('Training set mean accuracy: {:.4f}'.format(our_scores_digits79_train))
+    # # Test model on testing set
+    # our_scores_digits79_test = our_logistic_digits79.score(x_digits79_test, y_digits79_test)
+    # print('Testing set mean accuracy: {:.4f}'.format(our_scores_digits79_test))
 
 #     """
 #   Trains and tests our Linear Regression model trained using Gradient Descent
