@@ -5,9 +5,13 @@ import sklearn.datasets as skdata
 from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import LinearRegression
 
-
 import argparse
 import logging
+
+from pprint import pprint
+from pprint import pformat
+
+import re
 
 # Parse command line options
 parser = argparse.ArgumentParser(description='Do stuff.')
@@ -17,6 +21,12 @@ parser.add_argument(
     '-i', '--info', dest='info', action='store_true', default=0, help='info mode')
 parser.add_argument(
     '-w', '--warn', dest='warn', action='store_true', default=0, help='warn mode')
+parser.add_argument(
+    '-tc', '--t_cancer', dest='t_cancer', type=int, default=1000)
+parser.add_argument(
+    '-ac', '--alpha_cancer', dest='alpha_cancer', type=float, default=1e-4)
+parser.add_argument(
+    '-ec', '--epsilon_cancer', dest='epsilon_cancer', type=float, default=1e-8)
 
 args = parser.parse_args()
 
@@ -33,6 +43,10 @@ elif args.info:
     log.setLevel(logging.INFO)
 elif args.warn:
     log.setLevel(logging.WARNING)
+
+t_cancer = args.t_cancer
+alpha_cancer = args.alpha_cancer
+epsilon_cancer = args.epsilon_cancer
 
 """
 Name: Doe, John (Please write names in <Last Name, First Name> format)
@@ -174,6 +188,10 @@ class LogisticRegressionGradientDescent(object):
 
             # predict
             h_x = self.predict(x)
+            # log.info("h_x: " + str(h_x))  # vector
+
+            h_x_mag = np.sqrt(np.sum(h_x ** 2))
+            log.info("h_x_mag: " + str(h_x_mag))  # vector
 
             # compute the loss
             # loss = np.mean((h_x_y) ** 2)
@@ -181,15 +199,18 @@ class LogisticRegressionGradientDescent(object):
 
             # call update (which calls compute the gradients)
             w_i = self.__optimizer.update(self.__weights, x, y, alpha, 'logistic')
-            log.info("w_i: " + str(w_i))
-            log.info("weights: " + str(self.__weights))
+            # log.info("w_i: " + str(w_i)) # vector
+            # log.info("weights: " + str(self.__weights))
 
             if loss == 0:
                 break
 
             # d_w is the change in weights
             d_w = self.__weights - w_i
-            log.info("d_w: " + str(d_w))
+            # log.info("d_w: " + str(d_w))  # vector
+
+            d_w_mag = np.sqrt(np.sum(d_w ** 2))
+            log.info("d_w_mag: " + str(d_w_mag))
 
             # magnitude of the change in weights
             mag = np.sqrt(np.sum(d_w ** 2))
@@ -400,16 +421,21 @@ if __name__ == '__main__':
     # """ SCI KIT LEARN LOGISTIC
     # Trains and tests Logistic Regression model from scikit-learn
     # """
-    # # Trains scikit-learn Logistic Regression model on Wisconsin cancer data
-    # scikit_logistic_cancer = LogisticRegression(solver='liblinear')
-    # scikit_logistic_cancer.fit(x_cancer_train, y_cancer_train)
-    # print('Results on Wisconsin breast cancer dataset using scikit-learn Logistic Regression model')
-    # # Test model on training set
-    # scikit_scores_cancer_train = scikit_logistic_cancer.score(x_cancer_train, y_cancer_train)
-    # print('Training set mean accuracy: {:.4f}'.format(scikit_scores_cancer_train))
-    # # Test model on testing set
-    # scikit_scores_cancer_test = scikit_logistic_cancer.score(x_cancer_test, y_cancer_test)
-    # print('Testing set mean accuracy: {:.4f}'.format(scikit_scores_cancer_test))
+    # Trains scikit-learn Logistic Regression model on Wisconsin cancer data
+    scikit_logistic_cancer = LogisticRegression(solver='liblinear', verbose=2)
+    scikit_logistic_cancer.fit(x_cancer_train, y_cancer_train)
+    print('Results on Wisconsin breast cancer dataset using scikit-learn Logistic Regression model')
+    # Test model on training set
+    scikit_scores_cancer_train = scikit_logistic_cancer.score(x_cancer_train, y_cancer_train)
+    print('Training set mean accuracy: {:.4f}'.format(scikit_scores_cancer_train))
+    # Test model on testing set
+    scikit_scores_cancer_test = scikit_logistic_cancer.score(x_cancer_test, y_cancer_test)
+    print('Testing set mean accuracy: {:.4f}'.format(scikit_scores_cancer_test))
+
+    params = scikit_logistic_cancer.get_params()
+    log.info("params: " + str(params))
+    pprint(params)
+    log.info(pformat(params))
 
     # # Trains scikit-learn Logistic Regression model on digits 7 and 9 data
     # scikit_logistic_digits79 = LogisticRegression(solver='liblinear')
@@ -467,21 +493,44 @@ if __name__ == '__main__':
 
     # Increased alpha to 0.04: 0.6171, 0.7568
 
-    t_cancer = 1000       # how long you want to run for
-    alpha_cancer = 0.004   # how large of a step you take (started at 1e-4)
-    epsilon_cancer = 1e-1  # expected magnitude of movement at the finish line (1e-8)
+    # t_cancer = 1000      # how long you want to run for
+    # alpha_cancer = 1e-3   # how large of a step you take (started at 1e-4)
+    # epsilon_cancer = 1e-8  # expected magnitude of movement at the finish line (1e-8)
     our_logistic_cancer = LogisticRegressionGradientDescent()
 
     log.info("LOGISTIC CANCER FIT ... ")
-    our_logistic_cancer.fit(
-        x_cancer_train, y_cancer_train, t_cancer, alpha_cancer, epsilon_cancer)
-    print('Results on Wisconsin breast cancer dataset using our Logistic Regression model')
-    # Test model on training set
-    our_scores_cancer_train = our_logistic_cancer.score(x_cancer_train, y_cancer_train)
-    print('Training set mean accuracy: {:.4f}'.format(our_scores_cancer_train))
-    # Test model on testing set
-    our_scores_cancer_test = our_logistic_cancer.score(x_cancer_test, y_cancer_test)
-    print('Testing set mean accuracy: {:.4f}'.format(our_scores_cancer_test))
+
+    format = "%10i %15g %15g %15g %15g"
+    sformat = re.sub(r'[a-z]', 's', format)
+
+    for t_cancer in [100, 200, 300]:
+        print(sformat % (
+            "t_cancer",
+            "alpha_cancer",
+            "epsilon_cancer",
+            "cancer_train",
+            "cancer_test"
+        ))
+        for alpha_cancer in [1e-4, 1e-3, 1e-2, 1e-1]:
+            for epsilon_cancer in [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1]:
+
+                our_logistic_cancer.fit(
+                    x_cancer_train, y_cancer_train, t_cancer, alpha_cancer, epsilon_cancer)
+                # print('Results on Wisconsin breast cancer dataset using our Logistic Regression model')
+                # Test model on training set
+                our_scores_cancer_train = our_logistic_cancer.score(x_cancer_train, y_cancer_train)
+                # print('Training set mean accuracy: {:.4f}'.format(our_scores_cancer_train))
+                # Test model on testing set
+                our_scores_cancer_test = our_logistic_cancer.score(x_cancer_test, y_cancer_test)
+                # print('Testing set mean accuracy: {:.4f}'.format(our_scores_cancer_test))
+
+                print(format % (
+                    t_cancer,
+                    alpha_cancer,
+                    epsilon_cancer,
+                    our_scores_cancer_train,
+                    our_scores_cancer_test
+                ))
 
     # Trains our Logistic Regression model on digits 7 and 9 data
     # t_digits79 = 100
