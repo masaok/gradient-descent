@@ -22,7 +22,7 @@ parser.add_argument(
 parser.add_argument(
     '-w', '--warn', dest='warn', action='store_true', default=0, help='warn mode')
 parser.add_argument(
-    '-tc', '--t_cancer', dest='t_cancer', type=int, default=1000)
+    '-tc', '--t_cancer', dest='t_cancer', type=int, default=100)
 parser.add_argument(
     '-ac', '--alpha_cancer', dest='alpha_cancer', type=float, default=1e-4)
 parser.add_argument(
@@ -109,7 +109,7 @@ class GradientDescentOptimizer(object):
         bias = 0.5 * np.ones([x.shape[0], 1])
 
         # Concatenate the bias above
-        x = np.concatenate([bias, x], axis=-1)  # x is now [N, d + 1
+        x = np.concatenate([bias, x], axis=-1)  # x is now [N, d + 1]
 
         if loss_func == 'logistic':
 
@@ -121,12 +121,14 @@ class GradientDescentOptimizer(object):
                 # log.info("w.shape: " + str(np.squeeze(w).shape))
 
                 h_x = np.dot(np.squeeze(w), x_n)
+
+                # Gradient Descent, slide 22
                 gradients[n, :] = (-y[n] * x_n) / (1.0 + np.exp(y[n] * h_x))
 
                 # there are N gradients
 
-            # return 0.0
-            return np.mean(gradients, axis=0)
+            return np.mean(gradients, axis=0)  # How does this match the slide 22?
+
         elif loss_func == 'mean_squared':
             return 0.0
         elif loss_func == 'half_mean_squared':
@@ -147,9 +149,7 @@ class GradientDescentOptimizer(object):
         returns 1 x d weights
         """
 
-        # Call compute_gradients somewhere here
-        # alpha * self.__compute_gradients()
-
+        # Call compute_gradients (Gradient Descent, slide 18)
         w = w - alpha * self.__compute_gradients(w, x, y, loss_func)
 
         return w
@@ -184,16 +184,16 @@ class LogisticRegressionGradientDescent(object):
         self.__weights[0] = -1
 
         for i in range(int(t)):
-            log.info("LOGISTIC CANCER FIT LOOP i=" + str(i))
+            # log.info("LOGISTIC CANCER FIT LOOP i=" + str(i))
 
             # predict
             h_x = self.predict(x)
             # log.info("h_x: " + str(h_x))  # vector
 
             h_x_mag = np.sqrt(np.sum(h_x ** 2))
-            log.info("h_x_mag: " + str(h_x_mag))  # vector
+            # log.info("h_x_mag: " + str(h_x_mag))  # vector
 
-            # compute the loss
+            # compute the loss (Gradient Descent, slide 21)
             # loss = np.mean((h_x_y) ** 2)
             loss = np.mean(np.log(1 + np.exp(-y * h_x)))  # (N, 1) and (N, 1)
 
@@ -210,7 +210,7 @@ class LogisticRegressionGradientDescent(object):
             # log.info("d_w: " + str(d_w))  # vector
 
             d_w_mag = np.sqrt(np.sum(d_w ** 2))
-            log.info("d_w_mag: " + str(d_w_mag))
+            # log.info("d_w_mag: " + str(d_w_mag))
 
             # magnitude of the change in weights
             mag = np.sqrt(np.sum(d_w ** 2))
@@ -250,7 +250,7 @@ class LogisticRegressionGradientDescent(object):
             x_n = x[n, ...]
 
             h_x = np.dot(np.squeeze(self.__weights.T), x_n)
-            predictions[n] = 1 / (1 + np.exp(-1 * h_x))
+            predictions[n] = 1 / (1 + np.exp(-1 * h_x))  # Logistic Reg, slide 11
 
         predictions = np.where(predictions >= 0.5, 1.0, -1.0)
 
@@ -364,7 +364,7 @@ class LinearRegressionGradientDescent(object):
         return np.mean(y - h_x) ** 2
 
 
-def mean_squared_error(y_hat, y):
+def mean_squared_error(y_hat, y):  # Gradient Descent, slide 15
     """
     Computes the mean squared error
 
@@ -503,7 +503,22 @@ if __name__ == '__main__':
     format = "%10i %15g %15g %15g %15g"
     sformat = re.sub(r'[a-z]', 's', format)
 
-    for t_cancer in [100, 200, 300]:
+    tc_list = [100, 200, 300]
+    ac_list = [1e-4, 1e-3, 1e-2, 1e-1]
+    ec_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
+
+    tc_list = [100]
+    ac_list = [1e-4]
+    ec_list = [1e-8]
+
+    if args.t_cancer:
+        tc_list = [args.t_cancer]
+    if args.alpha_cancer:
+        ac_list = [args.alpha_cancer]
+    if args.epsilon_cancer:
+        ec_list = [args.epsilon_cancer]
+
+    for t_cancer in tc_list:
         print(sformat % (
             "t_cancer",
             "alpha_cancer",
@@ -511,8 +526,8 @@ if __name__ == '__main__':
             "cancer_train",
             "cancer_test"
         ))
-        for alpha_cancer in [1e-4, 1e-3, 1e-2, 1e-1]:
-            for epsilon_cancer in [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1]:
+        for alpha_cancer in ac_list:
+            for epsilon_cancer in ec_list:
 
                 our_logistic_cancer.fit(
                     x_cancer_train, y_cancer_train, t_cancer, alpha_cancer, epsilon_cancer)
