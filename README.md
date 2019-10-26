@@ -5,6 +5,14 @@ CMSI 533 Data Science
 ## SciKit Learn Logistic Regression on Cancer Data verbose output
 
 ```
+act: alternates
+pre: alternates
+delta: increases from 0.013 to 1.29
+f: decreases from 354.9 to 54.17
+|g|: decreases from 56,340 to 2.333
+```
+
+```
 iter  1 act 9.127e+01 pre 7.170e+01 delta 1.340e-02 f 3.549e+02 |g| 5.634e+04 CG   2
 cg reaches trust region boundary
 iter  2 act 6.267e+01 pre 5.091e+01 delta 2.132e-02 f 2.636e+02 |g| 3.499e+04 CG   2
