@@ -194,7 +194,6 @@ class LogisticRegressionGradientDescent(object):
             # log.info("h_x_mag: " + str(h_x_mag))  # vector
 
             # compute the loss (Gradient Descent, slide 21)
-            # loss = np.mean((h_x_y) ** 2)
             loss = np.mean(np.log(1 + np.exp(-y * h_x)))  # (N, 1) and (N, 1)
 
             # call update (which calls compute the gradients)
@@ -202,7 +201,7 @@ class LogisticRegressionGradientDescent(object):
             # log.info("w_i: " + str(w_i)) # vector
             # log.info("weights: " + str(self.__weights))
 
-            if loss == 0:
+            if loss == 0:  # global minima
                 break
 
             # d_w is the change in weights
@@ -303,16 +302,40 @@ class LinearRegressionGradientDescent(object):
         prev_w = self.__weights
         prev_loss = np.inf  # positive infinity
 
-        # for i in range(t):
-        #     # predict
-        #     predictions = self.predict(x)
+        for i in range(t):
 
-        #     # compute the loss
-        #     # loss = np.mean((h_x_y) ** 2)
+            # Not sure if this code is correct because it matches the "score" function
 
-        #     # compute the gradients
+            # predict
+            h_x = self.predict(x)
 
-        #     # check stopping conditions
+            # compute the loss
+            loss = np.mean((h_x - y) ** 2)
+
+            # compute the gradients
+            w_i = self.__optimizer.update(self.__weights, x, y, alpha, 'logistic')
+
+            # check stopping conditions
+            if loss == 0:  # global minima
+                break
+
+            d_w = self.__weights - w_i
+
+            d_w_mag = np.sqrt(np.sum(d_w ** 2))
+
+            # magnitude of the change in weights
+            mag = np.sqrt(np.sum(d_w ** 2))
+
+            log.info("i=" + str(i) + " loss=" + str(loss) + " mag=" + str(mag))
+
+            # Save the new weights
+            self.__weights = w_i
+
+            # check stopping conditions
+            if mag < epsilon:  # epsilon is expected mag when done
+                log.info("mag: " + str(mag))
+                log.info("eps: " + str(epsilon))
+                break
 
     def predict(self, x):
         """
