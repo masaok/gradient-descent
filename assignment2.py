@@ -134,10 +134,11 @@ class GradientDescentOptimizer(object):
 
         elif loss_func == 'mean_squared':
 
+            gradients = np.zeros(x.shape)
             for n in range(x.shape[0]):
                 x_n = x[n, :]
                 h_x_n = np.dot(np.squeeze(w), x_n)
-                gradients[n] = (h_x_n - y) * x_n
+                gradients[n] = (h_x_n - y[n]) * x_n
 
             return 2 * np.mean(gradients, axis=0)
 
@@ -316,19 +317,19 @@ class LinearRegressionGradientDescent(object):
         self.__weights = np.zeros([1, x.shape[1] + 1])
         self.__weights[0] = -1.0
 
-        prev_w = self.__weights
-        prev_loss = np.inf  # positive infinity
+        # prev_w = self.__weights
+        # prev_loss = np.inf  # positive infinity
 
         for i in range(t):
 
             # Not sure if this code is correct because it matches the "score" function
-            log.info("LINEAR FIT LOOP i=" + str(i))
 
             # predict
             h_x = self.predict(x)
 
             # compute the loss
             loss = np.mean((h_x - y) ** 2)
+            log.info("LINEAR FIT LOOP i=" + str(i) + " LOSS: " + str(loss))
 
             # compute the gradients
             w_i = self.__optimizer.update(self.__weights, x, y, alpha, 'mean_squared')
@@ -368,27 +369,26 @@ class LinearRegressionGradientDescent(object):
         # what should weights be equal to?
 
         x = np.concatenate([0.5 * np.ones([x.shape[0], 1]), x], axis=-1)
-
-        log.info("x.shape: " + str(x.shape))  # (455, 14)
+        # log.info("x.shape: " + str(x.shape))  # (455, 14)
 
         h_x = np.zeros(x.shape[0])
-        log.info("h_x.shape: " + str(h_x.shape))  # (455, )
+        # log.info("h_x.shape: " + str(h_x.shape))  # (455, )
 
         for n in range(x.shape[0]):
-            log.info("PREDICT LOOP: " + str(n))
+            # log.info("LINEAR PREDICT LOOP: " + str(n))
 
             x_n = x[n, ...]
-            log.info("  x_n.shape: " + str(x_n.shape))  # (14, )
+            # log.info("  x_n.shape: " + str(x_n.shape))  # (14, )
 
             x_n = np.expand_dims(x_n, axis=-1)
-            log.info("  x_n.shape (after expand): " + str(x_n.shape))  # (14, 1)
+            # log.info("  x_n.shape (after expand): " + str(x_n.shape))  # (14, 1)
 
             h_x_n = np.dot(np.squeeze(self.__weights), x_n)
-            log.info("  h_x_n.shape: " + str(h_x_n.shape))  # (1, )
+            # log.info("  h_x_n.shape: " + str(h_x_n.shape))  # (1, )
 
             h_x[n] = h_x_n
 
-        log.info("h_x.shape (after loop): " + str(h_x.shape))
+        # log.info("h_x.shape (after loop): " + str(h_x.shape))
 
         return h_x
 
@@ -422,7 +422,16 @@ def mean_squared_error(y_hat, y):  # Gradient Descent, slide 15
 
     returns : double
     """
-    return np.mean((y_hat-y)**2)
+
+    log.info("y_hat.shape: " + str(y_hat.shape))
+    log.info("y.shape: " + str(y.shape))
+
+    log.info("np.min(y_hat): " + str(np.min(y_hat)))
+    log.info("np.max(y_hat): " + str(np.max(y_hat)))
+
+    y_diff = y_hat - y  # vector subtraction
+
+    return np.mean(y_diff ** 2)
 
 
 if __name__ == '__main__':
@@ -502,6 +511,7 @@ if __name__ == '__main__':
     # Trains and tests Linear Regression model from scikit-learn
     # """
     # Trains scikit-learn Linear Regression model on Boston housing price data
+    log.info("SCI KIT LEARN LINEAR HOUSING")
     scikit_linear_housing = LinearRegression()
     scikit_linear_housing.fit(x_housing_train, y_housing_train)
     print('Results on Boston housing price dataset using scikit-learn Linear Regression model')
@@ -516,19 +526,20 @@ if __name__ == '__main__':
     # print('Testing set mean accuracy: {:.4f}'.format(scikit_scores_housing_test))
 
     # # Trains scikit-learn Linear Regression model on diabetes data
-    # scikit_linear_diabetes = LinearRegression()
-    # scikit_linear_diabetes.fit(x_diabetes_train, y_diabetes_train)
-    # print('Results on diabetes dataset using scikit-learn Linear Regression model')
-    # # Test model on training set
-    # scikit_predictions_diabetes_train = scikit_linear_diabetes.predict(x_diabetes_train)
-    # scikit_scores_diabetes_train = mean_squared_error(
-    #     scikit_predictions_diabetes_train, y_diabetes_train)
-    # print('Training set mean accuracy: {:.4f}'.format(scikit_scores_diabetes_train))
-    # # Test model on testing set
-    # scikit_predictions_diabetes_test = scikit_linear_diabetes.predict(x_diabetes_test)
-    # scikit_scores_diabetes_test = mean_squared_error(
-    #     scikit_predictions_diabetes_test, y_diabetes_test)
-    # print('Testing set mean accuracy: {:.4f}'.format(scikit_scores_diabetes_test))
+    log.info("SCI KIT LEARN LINEAR DIABETES")
+    scikit_linear_diabetes = LinearRegression()
+    scikit_linear_diabetes.fit(x_diabetes_train, y_diabetes_train)
+    print('Results on diabetes dataset using scikit-learn Linear Regression model')
+    # Test model on training set
+    scikit_predictions_diabetes_train = scikit_linear_diabetes.predict(x_diabetes_train)
+    scikit_scores_diabetes_train = mean_squared_error(
+        scikit_predictions_diabetes_train, y_diabetes_train)
+    print('Training set mean accuracy: {:.4f}'.format(scikit_scores_diabetes_train))
+    # Test model on testing set
+    scikit_predictions_diabetes_test = scikit_linear_diabetes.predict(x_diabetes_test)
+    scikit_scores_diabetes_test = mean_squared_error(
+        scikit_predictions_diabetes_test, y_diabetes_test)
+    print('Testing set mean accuracy: {:.4f}'.format(scikit_scores_diabetes_test))
 
     # raise SystemExit
 
@@ -609,15 +620,15 @@ if __name__ == '__main__':
     log.info("alpha_digits79: " + str(alpha_digits79))
     log.info("epsilon_digits79: " + str(epsilon_digits79))
 
-    our_logistic_digits79.fit(
-        x_digits79_train, y_digits79_train, t_digits79, alpha_digits79, epsilon_digits79)
-    print('Results on digits 7 and 9 dataset using our Logistic Regression model')
-    # Test model on training set
-    our_scores_digits79_train = our_logistic_digits79.score(x_digits79_train, y_digits79_train)
-    print('Training set mean accuracy: {:.4f}'.format(our_scores_digits79_train))
-    # Test model on testing set
-    our_scores_digits79_test = our_logistic_digits79.score(x_digits79_test, y_digits79_test)
-    print('Testing set mean accuracy: {:.4f}'.format(our_scores_digits79_test))
+    # our_logistic_digits79.fit(
+    #     x_digits79_train, y_digits79_train, t_digits79, alpha_digits79, epsilon_digits79)
+    # print('Results on digits 7 and 9 dataset using our Logistic Regression model')
+    # # Test model on training set
+    # our_scores_digits79_train = our_logistic_digits79.score(x_digits79_train, y_digits79_train)
+    # print('Training set mean accuracy: {:.4f}'.format(our_scores_digits79_train))
+    # # Test model on testing set
+    # our_scores_digits79_test = our_logistic_digits79.score(x_digits79_test, y_digits79_test)
+    # print('Testing set mean accuracy: {:.4f}'.format(our_scores_digits79_test))
 
     """
     Trains and tests our Linear Regression model trained using Gradient Descent
@@ -625,19 +636,19 @@ if __name__ == '__main__':
 
     # Trains our Linear Regression model on Boston housing price data
     t_housing = 100
-    alpha_housing = 1e-4
+    alpha_housing = 1e-6
     epsilon_housing = 1e-8
     our_linear_housing = LinearRegressionGradientDescent()
 
-    # log.info("LINEAR HOUSING FIT ... ")
-    # our_linear_housing.fit(
-    #     x_housing_train, y_housing_train, t_housing, alpha_housing, epsilon_housing)
-    # print('Results on Boston housing price dataset using our Linear Regression model')
+    log.info("LINEAR HOUSING FIT ... ")
+    our_linear_housing.fit(
+        x_housing_train, y_housing_train, t_housing, alpha_housing, epsilon_housing)
+    print('Results on Boston housing price dataset using our Linear Regression model')
 
-    # # Test model on training set
-    # our_predictions_housing_train = our_linear_housing.predict(x_housing_train)
-    # our_scores_housing_train = mean_squared_error(our_predictions_housing_train, y_housing_train)
-    # print('Training set mean accuracy: {:.4f}'.format(our_scores_housing_train))
+    # Test model on training set
+    our_predictions_housing_train = our_linear_housing.predict(x_housing_train)
+    our_scores_housing_train = mean_squared_error(our_predictions_housing_train, y_housing_train)
+    print('Training set mean accuracy: {:.4f}'.format(our_scores_housing_train))
 
     # # Test model on testing set
     # our_predictions_housing_test = our_linear_housing.predict(x_housing_test)
@@ -647,23 +658,23 @@ if __name__ == '__main__':
 #     # log.info("LINEAR HOUSING PREDICT ... ")
 #     # predictions = our_linear_housing.predict(x_housing_test)
 
-#     # Trains our Linear Regression model on diabetes data
-#     t_diabetes = 0.0
-#     alpha_diabetes = 0.0
-#     epsilon_diabetes = 0.0
-#     our_linear_diabetes = LinearRegressionGradientDescent()
-#     log.info("LINEAR DIABETES FIT ... ")
-#     our_linear_diabetes.fit(
-#         x_diabetes_train, y_diabetes_train, t_diabetes, alpha_diabetes, epsilon_diabetes)
-#     print('Results on diabetes dataset using our Linear Regression model')
-#     # Test model on training set
-#     our_predictions_diabetes_train = our_linear_diabetes.predict(x_diabetes_train)
-#     our_scores_diabetes_train = mean_squared_error(our_predictions_diabetes_train, y_diabetes_train)
-#     print('Training set mean accuracy: {:.4f}'.format(our_scores_diabetes_train))
-#     # Test model on testing set
-#     our_predictions_diabetes_test = our_linear_diabetes.predict(x_diabetes_test)
-#     our_scores_diabetes_test = mean_squared_error(our_predictions_diabetes_test, y_diabetes_test)
-#     print('Testing set mean accuracy: {:.4f}'.format(our_scores_diabetes_test))
+    # Trains our Linear Regression model on diabetes data
+    t_diabetes = 2000
+    alpha_diabetes = 2.5
+    epsilon_diabetes = 1e-8
+    our_linear_diabetes = LinearRegressionGradientDescent()
+    log.info("LINEAR DIABETES FIT ... ")
+    our_linear_diabetes.fit(
+        x_diabetes_train, y_diabetes_train, t_diabetes, alpha_diabetes, epsilon_diabetes)
+    print('Results on diabetes dataset using our Linear Regression model')
+    # Test model on training set
+    our_predictions_diabetes_train = our_linear_diabetes.predict(x_diabetes_train)
+    our_scores_diabetes_train = mean_squared_error(our_predictions_diabetes_train, y_diabetes_train)
+    print('Training set mean accuracy: {:.4f}'.format(our_scores_diabetes_train))
+    # Test model on testing set
+    our_predictions_diabetes_test = our_linear_diabetes.predict(x_diabetes_test)
+    our_scores_diabetes_test = mean_squared_error(our_predictions_diabetes_test, y_diabetes_test)
+    print('Testing set mean accuracy: {:.4f}'.format(our_scores_diabetes_test))
 
-#     # log.info("LINEAR DIABETES PREDICT ... ")
-#     # predictions = our_linear_diabetes.predict(x_diabetes_train)
+    # log.info("LINEAR DIABETES PREDICT ... ")
+    # predictions = our_linear_diabetes.predict(x_diabetes_train)
