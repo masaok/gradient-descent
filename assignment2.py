@@ -115,12 +115,15 @@ class GradientDescentOptimizer(object):
 
             gradients = np.zeros(x.shape)
             for n in range(x.shape[0]):
+
+                # Get row n of x
                 x_n = x[n, ...]
 
                 # log.info("x_n.shape: " + str(x_n.shape))
                 # log.info("w.shape: " + str(np.squeeze(w).shape))
 
-                h_x = np.dot(np.squeeze(w), x_n)
+                # Predictions
+                h_x = np.dot(np.squeeze(w), x_n)  # scalar
 
                 # Gradient Descent, slide 22
                 gradients[n, :] = (-y[n] * x_n) / (1.0 + np.exp(y[n] * h_x))
@@ -130,8 +133,16 @@ class GradientDescentOptimizer(object):
             return np.mean(gradients, axis=0)  # How does this match the slide 22?
 
         elif loss_func == 'mean_squared':
-            return 0.0
+
+            for n in range(x.shape[0]):
+                x_n = x[n, :]
+                h_x_n = np.dot(np.squeeze(w), x_n)
+                gradients[n] = (h_x_n - y) * x_n
+
+            return 2 * np.mean(gradients, axis=0)
+
         elif loss_func == 'half_mean_squared':
+
             return 0.0
         else:
             raise ValueError('Supported losses: logistic, mean_squared, or half_mean_squared')
@@ -215,7 +226,8 @@ class LogisticRegressionGradientDescent(object):
             mag = np.sqrt(np.sum(d_w ** 2))
             # log.info("eps: " + str(epsilon))
 
-            log.info("i=" + str(i) + " loss=" + str(loss) + " mag=" + str(mag))
+            if i % 50 == 0:
+                log.info("i=" + str(i) + " loss=" + str(loss) + " mag=" + str(mag))
 
             # Save the new weights
             self.__weights = w_i
@@ -235,6 +247,9 @@ class LogisticRegressionGradientDescent(object):
         returns : N x 1 label vector
         """
 
+        # Weights w is shape [1, d + 1] (number of dimensions)
+        # The extra weight is -1 * threshold
+
         # Prepend the set of x attributes with 0.5 bias (in Perceptron, this is threshold)
         bias = 0.5 * np.ones([x.shape[0], 1])
 
@@ -244,11 +259,13 @@ class LogisticRegressionGradientDescent(object):
         # Prepare an array for predictions
         predictions = np.zeros(x.shape[0])
 
-        # Iterate through every row in x
+        # Iterate through every row (example) in x
         for n in range(x.shape[0]):
-            x_n = x[n, ...]
+            x_n = x[n, ...]   # ... and : are the same
 
+            # With dot product, the size of the middle elements must match
             h_x = np.dot(np.squeeze(self.__weights.T), x_n)
+
             predictions[n] = 1 / (1 + np.exp(-1 * h_x))  # Logistic Reg, slide 11
 
         predictions = np.where(predictions >= 0.5, 1.0, -1.0)
@@ -283,7 +300,7 @@ class LinearRegressionGradientDescent(object):
         self.__weights = None
         self.__optimizer = GradientDescentOptimizer()
 
-    def fit(self, x, y, t, alpha, epsilon):
+    def fit(self, x, y, t, alpha, epsilon):  # Linear
         """
         Fits the model to x and y by updating the weight vector
         using gradient descent
@@ -305,6 +322,7 @@ class LinearRegressionGradientDescent(object):
         for i in range(t):
 
             # Not sure if this code is correct because it matches the "score" function
+            log.info("LINEAR FIT LOOP i=" + str(i))
 
             # predict
             h_x = self.predict(x)
@@ -313,20 +331,21 @@ class LinearRegressionGradientDescent(object):
             loss = np.mean((h_x - y) ** 2)
 
             # compute the gradients
-            w_i = self.__optimizer.update(self.__weights, x, y, alpha, 'logistic')
+            w_i = self.__optimizer.update(self.__weights, x, y, alpha, 'mean_squared')
 
             # check stopping conditions
-            if loss == 0:  # global minima
+            if loss == 0:  # global minima (we've predicted perfectly)
                 break
 
+            # Calculate change in weights
             d_w = self.__weights - w_i
 
-            d_w_mag = np.sqrt(np.sum(d_w ** 2))
-
-            # magnitude of the change in weights
+            # Magnitude of the change in weights (sqrt of sum of squares)
             mag = np.sqrt(np.sum(d_w ** 2))
 
-            log.info("i=" + str(i) + " loss=" + str(loss) + " mag=" + str(mag))
+            # Debug output
+            if i % 50 == 0:
+                log.info("i=" + str(i) + " loss=" + str(loss) + " mag=" + str(mag))
 
             # Save the new weights
             self.__weights = w_i
@@ -337,7 +356,7 @@ class LinearRegressionGradientDescent(object):
                 log.info("eps: " + str(epsilon))
                 break
 
-    def predict(self, x):
+    def predict(self, x):  # Linear
         """
         Predicts the label for each feature vector x
 
@@ -350,19 +369,26 @@ class LinearRegressionGradientDescent(object):
 
         x = np.concatenate([0.5 * np.ones([x.shape[0], 1]), x], axis=-1)
 
-        log.info("x.shape: " + str(x.shape))
+        log.info("x.shape: " + str(x.shape))  # (455, 14)
 
         h_x = np.zeros(x.shape[0])
-        log.info("h_x.shape: " + str(h_x.shape))
+        log.info("h_x.shape: " + str(h_x.shape))  # (455, )
 
         for n in range(x.shape[0]):
+            log.info("PREDICT LOOP: " + str(n))
+
             x_n = x[n, ...]
+            log.info("  x_n.shape: " + str(x_n.shape))  # (14, )
+
             x_n = np.expand_dims(x_n, axis=-1)
-            # h_x[n] = np.dot(self.__weights.T, x_n.T)
+            log.info("  x_n.shape (after expand): " + str(x_n.shape))  # (14, 1)
 
-            h_x[n] = np.dot(np.squeeze(self.__weights), x_n)
+            h_x_n = np.dot(np.squeeze(self.__weights), x_n)
+            log.info("  h_x_n.shape: " + str(h_x_n.shape))  # (1, )
 
-        # log.info("h_x: " + str(h_x))
+            h_x[n] = h_x_n
+
+        log.info("h_x.shape (after loop): " + str(h_x.shape))
 
         return h_x
 
@@ -384,7 +410,7 @@ class LinearRegressionGradientDescent(object):
         h_x = self.predict(x)  # (N x 1)
 
         # Grade the exam
-        return np.mean(y - h_x) ** 2
+        return np.mean(h_x - y) ** 2
 
 
 def mean_squared_error(y_hat, y):  # Gradient Descent, slide 15
@@ -457,33 +483,33 @@ if __name__ == '__main__':
 
     params = scikit_logistic_cancer.get_params()
     log.info("params: " + str(params))
-    pprint(params)
-    log.info(pformat(params))
+    # pprint(params)
+    # log.info(pformat(params))
 
-    # # Trains scikit-learn Logistic Regression model on digits 7 and 9 data
-    # scikit_logistic_digits79 = LogisticRegression(solver='liblinear')
-    # scikit_logistic_digits79.fit(x_digits79_train, y_digits79_train)
-    # print('Results on digits 7 and 9 dataset using scikit-learn Logistic Regression model')
-    # # Test model on training set
-    # scikit_scores_digits79_train = scikit_logistic_digits79.score(
-    #     x_digits79_train, y_digits79_train)
-    # print('Training set mean accuracy: {:.4f}'.format(scikit_scores_digits79_train))
-    # # Test model on testing set
-    # scikit_scores_digits79_test = scikit_logistic_digits79.score(x_digits79_test, y_digits79_test)
-    # print('Testing set mean accuracy: {:.4f}'.format(scikit_scores_digits79_test))
+    # Trains scikit-learn Logistic Regression model on digits 7 and 9 data
+    scikit_logistic_digits79 = LogisticRegression(solver='liblinear')
+    scikit_logistic_digits79.fit(x_digits79_train, y_digits79_train)
+    print('Results on digits 7 and 9 dataset using scikit-learn Logistic Regression model')
+    # Test model on training set
+    scikit_scores_digits79_train = scikit_logistic_digits79.score(
+        x_digits79_train, y_digits79_train)
+    print('Training set mean accuracy: {:.4f}'.format(scikit_scores_digits79_train))
+    # Test model on testing set
+    scikit_scores_digits79_test = scikit_logistic_digits79.score(x_digits79_test, y_digits79_test)
+    print('Testing set mean accuracy: {:.4f}'.format(scikit_scores_digits79_test))
 
     # """ SCI KIT LEARN LINEAR
     # Trains and tests Linear Regression model from scikit-learn
     # """
-    # # Trains scikit-learn Linear Regression model on Boston housing price data
-    # scikit_linear_housing = LinearRegression()
-    # scikit_linear_housing.fit(x_housing_train, y_housing_train)
-    # print('Results on Boston housing price dataset using scikit-learn Linear Regression model')
-    # # Test model on training set
-    # scikit_predictions_housing_train = scikit_linear_housing.predict(x_housing_train)
-    # scikit_scores_housing_train = mean_squared_error(
-    #     scikit_predictions_housing_train, y_housing_train)
-    # print('Training set mean accuracy: {:.4f}'.format(scikit_scores_housing_train))
+    # Trains scikit-learn Linear Regression model on Boston housing price data
+    scikit_linear_housing = LinearRegression()
+    scikit_linear_housing.fit(x_housing_train, y_housing_train)
+    print('Results on Boston housing price dataset using scikit-learn Linear Regression model')
+    # Test model on training set
+    scikit_predictions_housing_train = scikit_linear_housing.predict(x_housing_train)
+    scikit_scores_housing_train = mean_squared_error(
+        scikit_predictions_housing_train, y_housing_train)
+    print('Training set mean accuracy: {:.4f}'.format(scikit_scores_housing_train))
     # # Test model on testing set
     # scikit_predictions_housing_test = scikit_linear_housing.predict(x_housing_test)
     # scikit_scores_housing_test = mean_squared_error(scikit_predictions_housing_test, y_housing_test)
@@ -504,6 +530,8 @@ if __name__ == '__main__':
     #     scikit_predictions_diabetes_test, y_diabetes_test)
     # print('Testing set mean accuracy: {:.4f}'.format(scikit_scores_diabetes_test))
 
+    # raise SystemExit
+
     """ CUSTOM LOGISTIC
     Trains and tests our Logistic Regression model trained with Gradient Descent
     """
@@ -516,8 +544,8 @@ if __name__ == '__main__':
 
     # Increased alpha to 0.04: 0.6171, 0.7568
 
-    # t_cancer = 1000      # how long you want to run for
-    # alpha_cancer = 1e-3   # how large of a step you take (started at 1e-4)
+    # t_cancer = 1000        # how long you want to run for
+    # alpha_cancer = 1e-3    # how large of a step you take (started at 1e-4)
     # epsilon_cancer = 1e-8  # expected magnitude of movement at the finish line (1e-8)
     our_logistic_cancer = LogisticRegressionGradientDescent()
 
@@ -541,77 +569,80 @@ if __name__ == '__main__':
     if args.epsilon_cancer:
         ec_list = [args.epsilon_cancer]
 
-    for t_cancer in tc_list:
-        print(sformat % (
-            "t_cancer",
-            "alpha_cancer",
-            "epsilon_cancer",
-            "cancer_train",
-            "cancer_test"
-        ))
-        for alpha_cancer in ac_list:
-            for epsilon_cancer in ec_list:
+    # for t_cancer in tc_list:
+    #     print(sformat % (
+    #         "t_cancer",
+    #         "alpha_cancer",
+    #         "epsilon_cancer",
+    #         "cancer_train",
+    #         "cancer_test"
+    #     ))
+    #     for alpha_cancer in ac_list:
+    #         for epsilon_cancer in ec_list:
 
-                our_logistic_cancer.fit(
-                    x_cancer_train, y_cancer_train, t_cancer, alpha_cancer, epsilon_cancer)
-                # print('Results on Wisconsin breast cancer dataset using our Logistic Regression model')
-                # Test model on training set
-                our_scores_cancer_train = our_logistic_cancer.score(x_cancer_train, y_cancer_train)
-                # print('Training set mean accuracy: {:.4f}'.format(our_scores_cancer_train))
-                # Test model on testing set
-                our_scores_cancer_test = our_logistic_cancer.score(x_cancer_test, y_cancer_test)
-                # print('Testing set mean accuracy: {:.4f}'.format(our_scores_cancer_test))
+    #             our_logistic_cancer.fit(
+    #                 x_cancer_train, y_cancer_train, t_cancer, alpha_cancer, epsilon_cancer)
+    #             # print('Results on Wisconsin breast cancer dataset using our Logistic Regression model')
+    #             # Test model on training set
+    #             our_scores_cancer_train = our_logistic_cancer.score(x_cancer_train, y_cancer_train)
+    #             # print('Training set mean accuracy: {:.4f}'.format(our_scores_cancer_train))
+    #             # Test model on testing set
+    #             our_scores_cancer_test = our_logistic_cancer.score(x_cancer_test, y_cancer_test)
+    #             # print('Testing set mean accuracy: {:.4f}'.format(our_scores_cancer_test))
 
-                print(format % (
-                    t_cancer,
-                    alpha_cancer,
-                    epsilon_cancer,
-                    our_scores_cancer_train,
-                    our_scores_cancer_test
-                ))
+    #             print(format % (
+    #                 t_cancer,
+    #                 alpha_cancer,
+    #                 epsilon_cancer,
+    #                 our_scores_cancer_train,
+    #                 our_scores_cancer_test
+    #             ))
 
     # Trains our Logistic Regression model on digits 7 and 9 data
-    # t_digits79 = 100
-    # alpha_digits79 = 1e-4
-    # epsilon_digits79 = 1e-8
-    # our_logistic_digits79 = LogisticRegressionGradientDescent()
+    t_digits79 = 10000
+    alpha_digits79 = 1e-4
+    epsilon_digits79 = 1e-8
+    our_logistic_digits79 = LogisticRegressionGradientDescent()
 
-    # log.info("LOGISTIC DIGITS FIT ... ")
-    # log.info("t_digits79: " + str(t_digits79))
-    # log.info("alpha_digits79: " + str(alpha_digits79))
-    # log.info("epsilon_digits79: " + str(epsilon_digits79))
+    log.info("LOGISTIC DIGITS FIT ... ")
+    log.info("t_digits79: " + str(t_digits79))
+    log.info("alpha_digits79: " + str(alpha_digits79))
+    log.info("epsilon_digits79: " + str(epsilon_digits79))
 
-    # our_logistic_digits79.fit(
-    #     x_digits79_train, y_digits79_train, t_digits79, alpha_digits79, epsilon_digits79)
-    # print('Results on digits 7 and 9 dataset using our Logistic Regression model')
+    our_logistic_digits79.fit(
+        x_digits79_train, y_digits79_train, t_digits79, alpha_digits79, epsilon_digits79)
+    print('Results on digits 7 and 9 dataset using our Logistic Regression model')
+    # Test model on training set
+    our_scores_digits79_train = our_logistic_digits79.score(x_digits79_train, y_digits79_train)
+    print('Training set mean accuracy: {:.4f}'.format(our_scores_digits79_train))
+    # Test model on testing set
+    our_scores_digits79_test = our_logistic_digits79.score(x_digits79_test, y_digits79_test)
+    print('Testing set mean accuracy: {:.4f}'.format(our_scores_digits79_test))
+
+    """
+    Trains and tests our Linear Regression model trained using Gradient Descent
+    """
+
+    # Trains our Linear Regression model on Boston housing price data
+    t_housing = 100
+    alpha_housing = 1e-4
+    epsilon_housing = 1e-8
+    our_linear_housing = LinearRegressionGradientDescent()
+
+    # log.info("LINEAR HOUSING FIT ... ")
+    # our_linear_housing.fit(
+    #     x_housing_train, y_housing_train, t_housing, alpha_housing, epsilon_housing)
+    # print('Results on Boston housing price dataset using our Linear Regression model')
+
     # # Test model on training set
-    # our_scores_digits79_train = our_logistic_digits79.score(x_digits79_train, y_digits79_train)
-    # print('Training set mean accuracy: {:.4f}'.format(our_scores_digits79_train))
+    # our_predictions_housing_train = our_linear_housing.predict(x_housing_train)
+    # our_scores_housing_train = mean_squared_error(our_predictions_housing_train, y_housing_train)
+    # print('Training set mean accuracy: {:.4f}'.format(our_scores_housing_train))
+
     # # Test model on testing set
-    # our_scores_digits79_test = our_logistic_digits79.score(x_digits79_test, y_digits79_test)
-    # print('Testing set mean accuracy: {:.4f}'.format(our_scores_digits79_test))
-
-#     """
-#   Trains and tests our Linear Regression model trained using Gradient Descent
-#   """
-#     # Trains our Linear Regression model on Boston housing price data
-#     t_housing = 0.0
-#     alpha_housing = 0.0
-#     epsilon_housing = 0.0
-#     our_linear_housing = LinearRegressionGradientDescent()
-
-#     log.info("LINEAR HOUSING FIT ... ")
-#     our_linear_housing.fit(
-#         x_housing_train, y_housing_train, t_housing, alpha_housing, epsilon_housing)
-#     print('Results on Boston housing price dataset using our Linear Regression model')
-#     # Test model on training set
-#     our_predictions_housing_train = our_linear_housing.predict(x_housing_train)
-#     our_scores_housing_train = mean_squared_error(our_predictions_housing_train, y_housing_train)
-#     print('Training set mean accuracy: {:.4f}'.format(our_scores_housing_train))
-#     # Test model on testing set
-#     our_predictions_housing_test = our_linear_housing.predict(x_housing_test)
-#     our_scores_housing_test = mean_squared_error(our_predictions_housing_test, y_housing_test)
-#     print('Testing set mean accuracy: {:.4f}'.format(our_scores_housing_test))
+    # our_predictions_housing_test = our_linear_housing.predict(x_housing_test)
+    # our_scores_housing_test = mean_squared_error(our_predictions_housing_test, y_housing_test)
+    # print('Testing set mean accuracy: {:.4f}'.format(our_scores_housing_test))
 
 #     # log.info("LINEAR HOUSING PREDICT ... ")
 #     # predictions = our_linear_housing.predict(x_housing_test)
