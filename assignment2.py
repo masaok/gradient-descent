@@ -214,6 +214,7 @@ class LogisticRegressionGradientDescent(object):
             # log.info("weights: " + str(self.__weights))
 
             if loss == 0:  # global minima
+                log.info("LOSS is ZERO; we're done!")
                 break
 
             # d_w is the change in weights
@@ -237,6 +238,7 @@ class LogisticRegressionGradientDescent(object):
             if mag < epsilon:  # epsilon is expected mag when done
                 log.info("mag: " + str(mag))
                 log.info("eps: " + str(epsilon))
+                log.info("MAG < EPSILON; we're done!")
                 break
 
     def predict(self, x):
@@ -438,12 +440,6 @@ def mean_squared_error(y_hat, y):  # Gradient Descent, slide 15
 
 if __name__ == '__main__':
 
-    # Enable or disable parts of the assignment
-    logistic_cancer = False
-    logistic_digits = False
-    linear_housing = False
-    linear_diabetes = False
-
     # Loads breast cancer data with 90% training, 10% testing split
     breast_cancer_data = skdata.load_breast_cancer()
     x_cancer = breast_cancer_data.data
@@ -485,6 +481,12 @@ if __name__ == '__main__':
     x_diabetes_test, y_diabetes_test = x_diabetes[split_idx:, :], y_diabetes[split_idx:]
 
 
+    # Enable or disable parts of the assignment
+    logistic_cancer = True
+    logistic_cancer_verbose = 0
+    logistic_digits = False
+    linear_housing = False
+    linear_diabetes = False
 
     # raise SystemExit
 
@@ -510,55 +512,52 @@ if __name__ == '__main__':
 
         log.info("LOGISTIC CANCER FIT ... ")
 
-        format = "%10i %15g %15g %15g %15g"
-        sformat = re.sub(r'[a-z]', 's', format)
+        format = "%10i %15g %15g %15g %15g"  # numeric data in row format
+        sformat = re.sub(r'[a-z]', 's', format)  # use same widths, but format for strings only
 
         tc_list = [100, 200, 300]
         ac_list = [1e-4, 1e-3, 1e-2, 1e-1]
         ec_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
 
-        tc_list = [100]
-        ac_list = [1e-4]
+        tc_list = [1000]
+        ac_list = [1e-3]
         ec_list = [1e-8]
 
-        if args.t_cancer:
-            tc_list = [args.t_cancer]
-        if args.alpha_cancer:
-            ac_list = [args.alpha_cancer]
-        if args.epsilon_cancer:
-            ec_list = [args.epsilon_cancer]
+        for t_cancer in tc_list:
+            for alpha_cancer in ac_list:
+                for epsilon_cancer in ec_list:
 
-        # for t_cancer in tc_list:
-        #     print(sformat % (
-        #         "t_cancer",
-        #         "alpha_cancer",
-        #         "epsilon_cancer",
-        #         "cancer_train",
-        #         "cancer_test"
-        #     ))
-        #     for alpha_cancer in ac_list:
-        #         for epsilon_cancer in ec_list:
+                    log.info("t: " + str(t_cancer))
+                    log.info("alpha: " + str(alpha_cancer))
+                    log.info("epsilon: " + str(epsilon_cancer))
 
-        #             our_logistic_cancer.fit(
-        #                 x_cancer_train, y_cancer_train, t_cancer, alpha_cancer, epsilon_cancer)
-        #             # print('Results on Wisconsin breast cancer dataset using our Logistic Regression model')
-        #             # Test model on training set
-        #             our_scores_cancer_train = our_logistic_cancer.score(x_cancer_train, y_cancer_train)
-        #             # print('Training set mean accuracy: {:.4f}'.format(our_scores_cancer_train))
-        #             # Test model on testing set
-        #             our_scores_cancer_test = our_logistic_cancer.score(x_cancer_test, y_cancer_test)
-        #             # print('Testing set mean accuracy: {:.4f}'.format(our_scores_cancer_test))
+                    our_logistic_cancer.fit(
+                        x_cancer_train, y_cancer_train, t_cancer, alpha_cancer, epsilon_cancer)
+                    # print('Results on Wisconsin breast cancer dataset using our Logistic Regression model')
+                    # Test model on training set
+                    our_scores_cancer_train = our_logistic_cancer.score(x_cancer_train, y_cancer_train)
+                    # print('Training set mean accuracy: {:.4f}'.format(our_scores_cancer_train))
+                    # Test model on testing set
+                    our_scores_cancer_test = our_logistic_cancer.score(x_cancer_test, y_cancer_test)
+                    # print('Testing set mean accuracy: {:.4f}'.format(our_scores_cancer_test))
 
-        #             print(format % (
-        #                 t_cancer,
-        #                 alpha_cancer,
-        #                 epsilon_cancer,
-        #                 our_scores_cancer_train,
-        #                 our_scores_cancer_test
-        #             ))
+                    print(sformat % (
+                        "t_cancer",
+                        "alpha_cancer",
+                        "epsilon_cancer",
+                        "cancer_train",
+                        "cancer_test"
+                    ))
+                    print(format % (
+                        t_cancer,
+                        alpha_cancer,
+                        epsilon_cancer,
+                        our_scores_cancer_train,
+                        our_scores_cancer_test
+                    ))
 
         # Trains scikit-learn Logistic Regression model on Wisconsin cancer data
-        scikit_logistic_cancer = LogisticRegression(solver='liblinear', verbose=2)
+        scikit_logistic_cancer = LogisticRegression(solver='liblinear', verbose=logistic_cancer_verbose)
         scikit_logistic_cancer.fit(x_cancer_train, y_cancer_train)
         print('Results on Wisconsin breast cancer dataset using scikit-learn Logistic Regression model')
         # Test model on training set
@@ -569,7 +568,7 @@ if __name__ == '__main__':
         print('Testing set mean accuracy: {:.4f}'.format(scikit_scores_cancer_test))
 
         params = scikit_logistic_cancer.get_params()
-        log.info("params: " + str(params))
+        # log.info("params: " + str(params))
         # pprint(params)
         # log.info(pformat(params))
 
