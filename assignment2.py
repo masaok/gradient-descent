@@ -173,6 +173,12 @@ trained using Gradient Descent
 """
 
 
+def exp_normalize(x):
+    b = x.max()
+    y = np.exp(x - b)
+    return y / y.sum()
+
+
 class LogisticRegressionGradientDescent(object):
     def __init__(self):
         # Define private variables
@@ -190,6 +196,9 @@ class LogisticRegressionGradientDescent(object):
         alpha : learning rate
         epsilon : threshold for stopping condition
         """
+
+        # Convert all zero y's to -1, because predictions will only be 1 or -1
+        y = np.where(y == 0.0, -1.0, 1.0)
 
         # +1 is the threshold
         self.__weights = np.zeros([1, x.shape[1]+1])
@@ -228,7 +237,7 @@ class LogisticRegressionGradientDescent(object):
             mag = np.sqrt(np.sum(d_w ** 2))
             # log.info("eps: " + str(epsilon))
 
-            if i % 50 == 0:
+            if i % 100 == 0:
                 log.info("i=" + str(i) + " loss=" + str(loss) + " mag=" + str(mag))
 
             # Save the new weights
@@ -268,8 +277,16 @@ class LogisticRegressionGradientDescent(object):
 
             # With dot product, the size of the middle elements must match
             h_x = np.dot(np.squeeze(self.__weights.T), x_n)
+            # log.info("h_x: " + str(h_x))
 
-            predictions[n] = 1 / (1 + np.exp(-1 * h_x))  # Logistic Reg, slide 11
+            # exp = exp_normalize(-1 * h_x)
+            # log.info("exp: " + str(exp))
+
+            exp = np.exp(-1 * h_x)
+            # log.info("exp: " + str(exp))
+
+            predictions[n] = 1 / (1 + exp)  # Logistic Reg, slide 11
+            # log.info("predictions[n]: " + str(predictions[n]))
 
         predictions = np.where(predictions >= 0.5, 1.0, -1.0)
 
@@ -287,9 +304,16 @@ class LogisticRegressionGradientDescent(object):
 
         returns : double
         """
-        h_x = self.predict(x)
+        predictions = self.predict(x)
 
-        return np.mean(np.where(h_x == y, 1.0, 0.01))
+        # Convert all zero answers to -1 to prepare matching with predictions
+        y = np.where(y == 0.0, -1.0, 1.0)
+
+        # Scores are based on where predictions match y
+        scores = np.where(y == predictions, 1, 0)
+
+        # Return the average
+        return np.mean(scores)
 
 
 """
@@ -480,11 +504,10 @@ if __name__ == '__main__':
     x_diabetes_train, y_diabetes_train = x_diabetes[:split_idx, :], y_diabetes[:split_idx]
     x_diabetes_test, y_diabetes_test = x_diabetes[split_idx:, :], y_diabetes[split_idx:]
 
-
     # Enable or disable parts of the assignment
     logistic_cancer = True
     logistic_cancer_verbose = 0
-    logistic_digits = False
+    logistic_digits = True
     linear_housing = False
     linear_diabetes = False
 
@@ -520,8 +543,9 @@ if __name__ == '__main__':
         ec_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
 
         tc_list = [1000]
-        ac_list = [1e-3]
-        ec_list = [1e-8]
+        # tc_list = [3]
+        ac_list = [1e-8]
+        ec_list = [1e-11]
 
         for t_cancer in tc_list:
             for alpha_cancer in ac_list:
@@ -535,7 +559,8 @@ if __name__ == '__main__':
                         x_cancer_train, y_cancer_train, t_cancer, alpha_cancer, epsilon_cancer)
                     # print('Results on Wisconsin breast cancer dataset using our Logistic Regression model')
                     # Test model on training set
-                    our_scores_cancer_train = our_logistic_cancer.score(x_cancer_train, y_cancer_train)
+                    our_scores_cancer_train = our_logistic_cancer.score(
+                        x_cancer_train, y_cancer_train)
                     # print('Training set mean accuracy: {:.4f}'.format(our_scores_cancer_train))
                     # Test model on testing set
                     our_scores_cancer_test = our_logistic_cancer.score(x_cancer_test, y_cancer_test)
@@ -557,7 +582,8 @@ if __name__ == '__main__':
                     ))
 
         # Trains scikit-learn Logistic Regression model on Wisconsin cancer data
-        scikit_logistic_cancer = LogisticRegression(solver='liblinear', verbose=logistic_cancer_verbose)
+        scikit_logistic_cancer = LogisticRegression(
+            solver='liblinear', verbose=logistic_cancer_verbose)
         scikit_logistic_cancer.fit(x_cancer_train, y_cancer_train)
         print('Results on Wisconsin breast cancer dataset using scikit-learn Logistic Regression model')
         # Test model on training set
@@ -572,11 +598,10 @@ if __name__ == '__main__':
         # pprint(params)
         # log.info(pformat(params))
 
-
     if logistic_digits:
 
         # Trains our Logistic Regression model on digits 7 and 9 data
-        t_digits79 = 10000
+        t_digits79 = 1000
         alpha_digits79 = 1e-4
         epsilon_digits79 = 1e-8
         our_logistic_digits79 = LogisticRegressionGradientDescent()
@@ -586,15 +611,15 @@ if __name__ == '__main__':
         log.info("alpha_digits79: " + str(alpha_digits79))
         log.info("epsilon_digits79: " + str(epsilon_digits79))
 
-        # our_logistic_digits79.fit(
-        #     x_digits79_train, y_digits79_train, t_digits79, alpha_digits79, epsilon_digits79)
-        # print('Results on digits 7 and 9 dataset using our Logistic Regression model')
-        # # Test model on training set
-        # our_scores_digits79_train = our_logistic_digits79.score(x_digits79_train, y_digits79_train)
-        # print('Training set mean accuracy: {:.4f}'.format(our_scores_digits79_train))
-        # # Test model on testing set
-        # our_scores_digits79_test = our_logistic_digits79.score(x_digits79_test, y_digits79_test)
-        # print('Testing set mean accuracy: {:.4f}'.format(our_scores_digits79_test))
+        our_logistic_digits79.fit(
+            x_digits79_train, y_digits79_train, t_digits79, alpha_digits79, epsilon_digits79)
+        print('Results on digits 7 and 9 dataset using our Logistic Regression model')
+        # Test model on training set
+        our_scores_digits79_train = our_logistic_digits79.score(x_digits79_train, y_digits79_train)
+        print('Training set mean accuracy: {:.4f}'.format(our_scores_digits79_train))
+        # Test model on testing set
+        our_scores_digits79_test = our_logistic_digits79.score(x_digits79_test, y_digits79_test)
+        print('Testing set mean accuracy: {:.4f}'.format(our_scores_digits79_test))
 
         # """ SCI KIT LEARN LOGISTIC DIGITS
         # Trains and tests Logistic Regression model from scikit-learn
@@ -609,7 +634,8 @@ if __name__ == '__main__':
             x_digits79_train, y_digits79_train)
         print('Training set mean accuracy: {:.4f}'.format(scikit_scores_digits79_train))
         # Test model on testing set
-        scikit_scores_digits79_test = scikit_logistic_digits79.score(x_digits79_test, y_digits79_test)
+        scikit_scores_digits79_test = scikit_logistic_digits79.score(
+            x_digits79_test, y_digits79_test)
         print('Testing set mean accuracy: {:.4f}'.format(scikit_scores_digits79_test))
 
     """
@@ -631,7 +657,8 @@ if __name__ == '__main__':
 
         # Test model on training set
         our_predictions_housing_train = our_linear_housing.predict(x_housing_train)
-        our_scores_housing_train = mean_squared_error(our_predictions_housing_train, y_housing_train)
+        our_scores_housing_train = mean_squared_error(
+            our_predictions_housing_train, y_housing_train)
         print('Training set mean accuracy: {:.4f}'.format(our_scores_housing_train))
 
         # # Test model on testing set
@@ -687,11 +714,13 @@ if __name__ == '__main__':
         print('Results on diabetes dataset using our Linear Regression model')
         # Test model on training set
         our_predictions_diabetes_train = our_linear_diabetes.predict(x_diabetes_train)
-        our_scores_diabetes_train = mean_squared_error(our_predictions_diabetes_train, y_diabetes_train)
+        our_scores_diabetes_train = mean_squared_error(
+            our_predictions_diabetes_train, y_diabetes_train)
         print('Training set mean accuracy: {:.4f}'.format(our_scores_diabetes_train))
         # Test model on testing set
         our_predictions_diabetes_test = our_linear_diabetes.predict(x_diabetes_test)
-        our_scores_diabetes_test = mean_squared_error(our_predictions_diabetes_test, y_diabetes_test)
+        our_scores_diabetes_test = mean_squared_error(
+            our_predictions_diabetes_test, y_diabetes_test)
         print('Testing set mean accuracy: {:.4f}'.format(our_scores_diabetes_test))
 
         # log.info("LINEAR DIABETES PREDICT ... ")
