@@ -308,6 +308,7 @@ class LogisticRegressionGradientDescent(object):
 
         # Convert all zero answers to -1 to prepare matching with predictions
         y = np.where(y == 0.0, -1.0, 1.0)
+        # log.info("y: " + str(y))
 
         # Scores are based on where predictions match y
         scores = np.where(y == predictions, 1, 0)
@@ -504,11 +505,17 @@ if __name__ == '__main__':
     x_diabetes_train, y_diabetes_train = x_diabetes[:split_idx, :], y_diabetes[:split_idx]
     x_diabetes_test, y_diabetes_test = x_diabetes[split_idx:, :], y_diabetes[split_idx:]
 
-    # Enable or disable parts of the assignment
+    # Run everything by default
     logistic_cancer = True
     logistic_cancer_verbose = 0
     logistic_digits = True
-    linear_housing = False
+    linear_housing = True
+    linear_diabetes = True
+
+    # Disable parts of the assignment by setting variables above to False
+    logistic_cancer = False
+    logistic_digits = False
+    # linear_housing = False
     linear_diabetes = False
 
     # raise SystemExit
@@ -544,7 +551,7 @@ if __name__ == '__main__':
 
         tc_list = [1000]
         # tc_list = [3]
-        ac_list = [1e-8]
+        ac_list = [10]
         ec_list = [1e-11]
 
         for t_cancer in tc_list:
@@ -601,8 +608,17 @@ if __name__ == '__main__':
     if logistic_digits:
 
         # Trains our Logistic Regression model on digits 7 and 9 data
+
+        # This tuning results in loss decreasing to a constant value
+        # This means that the training set tells us everything there is to know
+        # about the testing set.
+        # "We've learned all we need to, to do well on the testing set."
+        # Exam analogy: if you are studying for an exam,
+        #   ...and you don't know everything in the study guide...
+        #   ...but, you happened to ace the test with what you do know...
+        #   ...this is what happens with these inputs.
         t_digits79 = 1000
-        alpha_digits79 = 1e-4
+        alpha_digits79 = 0.001
         epsilon_digits79 = 1e-8
         our_logistic_digits79 = LogisticRegressionGradientDescent()
 
@@ -645,8 +661,8 @@ if __name__ == '__main__':
     if linear_housing:
 
         # Trains our Linear Regression model on Boston housing price data
-        t_housing = 100
-        alpha_housing = 1e-6
+        t_housing = 30000
+        alpha_housing = 3.25e-6
         epsilon_housing = 1e-8
         our_linear_housing = LinearRegressionGradientDescent()
 
@@ -661,10 +677,10 @@ if __name__ == '__main__':
             our_predictions_housing_train, y_housing_train)
         print('Training set mean accuracy: {:.4f}'.format(our_scores_housing_train))
 
-        # # Test model on testing set
-        # our_predictions_housing_test = our_linear_housing.predict(x_housing_test)
-        # our_scores_housing_test = mean_squared_error(our_predictions_housing_test, y_housing_test)
-        # print('Testing set mean accuracy: {:.4f}'.format(our_scores_housing_test))
+        # Test model on testing set
+        our_predictions_housing_test = our_linear_housing.predict(x_housing_test)
+        our_scores_housing_test = mean_squared_error(our_predictions_housing_test, y_housing_test)
+        print('Testing set mean accuracy: {:.4f}'.format(our_scores_housing_test))
 
         # log.info("LINEAR HOUSING PREDICT ... ")
         # predictions = our_linear_housing.predict(x_housing_test)
@@ -673,7 +689,6 @@ if __name__ == '__main__':
         # Trains and tests Linear Regression model from scikit-learn
         # """
         # Trains scikit-learn Linear Regression model on Boston housing price data
-        log.info("SCI KIT LEARN LINEAR HOUSING")
         scikit_linear_housing = LinearRegression()
         scikit_linear_housing.fit(x_housing_train, y_housing_train)
         print('Results on Boston housing price dataset using scikit-learn Linear Regression model')
@@ -682,10 +697,11 @@ if __name__ == '__main__':
         scikit_scores_housing_train = mean_squared_error(
             scikit_predictions_housing_train, y_housing_train)
         print('Training set mean accuracy: {:.4f}'.format(scikit_scores_housing_train))
-        # # Test model on testing set
-        # scikit_predictions_housing_test = scikit_linear_housing.predict(x_housing_test)
-        # scikit_scores_housing_test = mean_squared_error(scikit_predictions_housing_test, y_housing_test)
-        # print('Testing set mean accuracy: {:.4f}'.format(scikit_scores_housing_test))
+        # Test model on testing set
+        scikit_predictions_housing_test = scikit_linear_housing.predict(x_housing_test)
+        scikit_scores_housing_test = mean_squared_error(
+            scikit_predictions_housing_test, y_housing_test)
+        print('Testing set mean accuracy: {:.4f}'.format(scikit_scores_housing_test))
 
     if linear_diabetes:
 
